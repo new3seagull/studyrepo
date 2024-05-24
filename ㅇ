@@ -7,7 +7,7 @@
   </head>
   <body>
     My test
-    
+	<button id="pauseButton">Pause WebGazer</button>
 	
     <script>
         webgazer.setGazeListener(function(data, elapsedTime) {
@@ -20,13 +20,31 @@
         }).begin();
 
         setInterval(function() {
-            var prediction = webgazer.getCurrentPrediction();
-            if (prediction) {
-                var x = prediction.x;
-                var y = prediction.y;
-                console.log(`Current Prediction - X: ${x}, Y: ${y}`);
-            }
+            webgazer.getCurrentPrediction().then(prediction => {
+	            if (prediction) {
+	                var x = prediction.x;
+	                var y = prediction.y;
+	                console.log(`Current Prediction - X: ${x}, Y: ${y}`);
+	            }
+		});
+		
         }, 100); // 100 milliseconds interval
+
+	document.getElementById('pauseButton').addEventListener('click',function(){
+          var webgazerObject = webgazer.pause();
+          console.log('webGazer puased:', webgazerObject)
+
+          var intervalId = setInterval(function() {
+            webgazerObject.getCurrentPrediction().then(p => {
+              if (p){
+              var x = p.x;
+              var y = p.y;
+              console.log(`New Prediction - X: ${x}, Y: ${y}`);
+            }
+            });
+          
+          })
+        });
         
     </script>
   </body>
