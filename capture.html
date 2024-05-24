@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<body>
+<button id="start">Start capture</button>
+<button id="stop">Stop capture</button>
+<video id="video" autoplay></video>
+</body>
+<script>
+
+const videoElem = document.getElementById("video");
+const startElem = document.getElementById("start");
+const stopElem = document.getElementById("stop");
+
+let captureInterval;
+var displayMediaOptions = {
+  video: true,  // 전체 화면을 캡처하도록 설정
+  audio: false
+};
+
+startElem.addEventListener("click", function(evt) {
+  startCapture();
+}, false);
+
+stopElem.addEventListener("click", function(evt) {
+  stopCapture();
+}, false);
+
+async function startCapture() {
+  try {
+    // 디스플레이(스크린)에서 미디어(영상) 스트림을 비동기적으로 가져오는 JavaScript의 명령입니다
+    const mediaStream = await navigator.mediaDevices.getDisplayMedia(displayMediaOptions);    
+
+    // 5초마다 캡처
+    captureInterval = setInterval(() => {
+      captureFrame(mediaStream);
+    }, 5000);
+  } catch(err) {
+    console.error("Error: " + err);
+  }
+}
+
+function stopCapture(evt) {
+  clearInterval(captureInterval);
+
+  let tracks = videoElem.srcObject.getTracks();
+  tracks.forEach(track => track.stop());
+  videoElem.srcObject = null;
+}
+
+function captureFrame(mediaStream) {
+    // 화면 들고오기
+  const videoTrack = mediaStream.getVideoTracks()[0];
+  //videoTrack을 이용하여 ImageCapture 객체를 생성합니다. ImageCapture는 비디오 트랙에서 이미지를 캡처할 수 있는 API입니다.
+  const imageCapture = new ImageCapture(videoTrack);
+  
+  //grabFrame 메소드를 호출하여 현재 비디오 트랙에서 프레임을 캡처합니다. 이 메소드는 Promise를 반환하며,
+  // 성공 시 imageBitmap 객체를 반환합니다.
+  imageCapture.grabFrame()
+    .then(imageBitmap => {
+        //canvas 요소를 동적으로 생성하고, 캡처한 이미지의 크기에 맞게 크기를 설정합니다.
+        //canvas의 2D 렌더링 컨텍스트를 가져와서 imageBitmap을 그립니다.
+      const canvas = document.createElement('canvas');
+      canvas.width = imageBitmap.width;
+      canvas.height = imageBitmap.height;
+      const context = canvas.getContext('2d');
+      context.drawImage(imageBitmap, 0, 0);
+
+      //canvas.toBlob 메소드를 사용하여 캔버스의 내용을 블롭(Blob)으로 변환합니다.
+      //블롭을 가리키는 URL을 생성하고, 이를 a 태그의 href 속성에 할당합니다.
+      //다운로드 속성을 설정하여 파일 이름을 'screenshot.png'로 지정하고, a 태그를 클릭하여 파일을 다운로드합니다.
+      canvas.toBlob(blob => {
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'screenshot.png';
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+    })
+    .catch(error => console.error("Frame capture error:", error));
+}
+
+</script>
+</html>
